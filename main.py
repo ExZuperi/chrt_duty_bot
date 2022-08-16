@@ -2,7 +2,7 @@ import telebot
 from Database import *
 from telebot import types
 
-bot = telebot.TeleBot('5497490945:AAFqJwxXiWoH3DUR_bQoiEUOTUKW7JS9jqE')
+bot = telebot.TeleBot('')
 myId = 457037353
 historyGroupId = -1001642646649
 
