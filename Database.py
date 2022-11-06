@@ -1,5 +1,7 @@
 import sqlite3
 
+import main
+
 Database = sqlite3.connect('users.db', check_same_thread=False)
 cur = Database.cursor()
 
@@ -13,13 +15,19 @@ cur.execute("""CREATE TABLE IF NOT EXISTS users(
 """)
 Database.commit()
 
-def set_another_one(user_id):
+
+def set_priority_plus_one(user_id):
     cur.execute(f"UPDATE users SET priority = priority + 1 WHERE userid = {user_id}")
     Database.commit()
 
 
 def set_priority_to_zero():
     cur.execute("UPDATE users SET priority = 0 WHERE priority > 0")
+    Database.commit()
+
+
+def set_priority_to_zero_for_user(user_id):
+    cur.execute(f"UPDATE users SET priority = 0 WHERE userid = {user_id}")
     Database.commit()
 
 
@@ -33,7 +41,7 @@ def set_priority_to_last():
     Database.commit()
 
 
-def get_choose_from_group(amount, group): #TODO костыль?
+def get_choose_from_group(amount, group):  # TODO костыль?
     cur.execute(
         f"SELECT * FROM users WHERE in_group = {group} ORDER BY priority, circles LIMIT {amount}")
     pretender = cur.fetchall()
@@ -41,21 +49,15 @@ def get_choose_from_group(amount, group): #TODO костыль?
     for i in range(len(pretender)):
         if pretender[i][5] != 0:
             cur.execute(
-                f"SELECT * FROM users WHERE in_group = {group} AND priorityDuty = {pretender[i][5]} AND priority = {pretender[i][2]} ORDER BY circles LIMIT {amount - 1}")
-            prerez = cur.fetchall()
-            #Выбираем ему подобных и уменьшаем количество также ставим приоритет выбранным, чтобы их не задело снова
-            amount -= len(prerez)
-            for j in range(len(prerez)):
-                set_priority_to_max(prerez[j][0])
-            #Выбираем оставшихся
-            cur.execute(
-                f"SELECT * FROM users WHERE in_group = {group} ORDER BY priority, circles LIMIT {amount}")
-            pretender = cur.fetchall()
-            #Убираем приоритеты после выбора и объединяем листы
-            set_priority_to_last()
-            pretender.extend(prerez)
-            return pretender
-    #Если нет тех кто хочет дежурить вместе
+                f"SELECT * FROM users WHERE in_group = {group} AND priorityDuty = {pretender[i][5]} AND priority = {pretender[i][2]} ORDER BY circles LIMIT {amount}")
+            two_pretenders = cur.fetchall()
+            if len(two_pretenders) < 2:
+                set_priority_plus_one(two_pretenders[0][0])  # TODO : Bug when another group his member / NoneFix mb
+                return get_choose_from_group(amount, group)
+            else:
+                amount -= 2
+                two_pretenders.extend(get_choose_from_group(amount, group))  # TODO: Rename
+                return two_pretenders
     return pretender
 
 
@@ -66,28 +68,25 @@ def get_choose_from_all(amount):
     for i in range(len(pretender)):
         if pretender[i][5] != 0:
             cur.execute(
-                f"SELECT * FROM users WHERE priorityDuty = {pretender[i][5]} AND priority = {pretender[i][2]} ORDER BY circles LIMIT {amount - 1}")
-            prerez = cur.fetchall()
-            #Выбираем ему подобных и уменьшаем количество также ставим приоритет выбранным, чтобы их не задело снова
-            amount -= len(prerez)
-            for j in range(len(prerez)):
-                set_priority_to_max(prerez[j][0])
-            #Выбираем оставшихся
-            cur.execute(
-                f"SELECT * FROM users ORDER BY priority, circles LIMIT {amount}")
-            pretender = cur.fetchall()
-            #Убираем приоритеты после выбора и объединяем листы
-            set_priority_to_last()
-            pretender.extend(prerez)
-            return pretender
-    #Если нет тех кто хочет дежурить вместе
+                f"SELECT * FROM users WHERE priorityDuty = {pretender[i][5]} AND priority = {pretender[i][2]} ORDER BY circles LIMIT {amount}")
+            two_pretenders = cur.fetchall()
+            if len(two_pretenders) < 2:
+                set_priority_plus_one(two_pretenders[0][0])  # TODO : Bug when another group his member / NoneFix mb
+                return get_choose_from_all(amount)
+            else:
+                amount -= 2
+                two_pretenders.extend(get_choose_from_all(amount))  # TODO: Rename
+                return two_pretenders
     return pretender
 
 
 def get_who_am_i(user_id):
-    cur.execute(f"SELECT name, circles, in_group FROM users WHERE userid = {user_id}")
-    who = cur.fetchall()
-    return who
+    try:
+        cur.execute(f"SELECT name, circles, in_group FROM users WHERE userid = {user_id}")
+        who = cur.fetchall()
+        return who
+    except sqlite3.ProgrammingError as e:
+        main.bot.send_message(user_id, "Вы вызвали ошибку. Вопрос: Как? Напишите мне, Вы - звезда")
 
 
 def get_priority_duty():
@@ -98,16 +97,6 @@ def get_rate():
     cur.execute("SELECT name, circles FROM users ORDER BY circles DESC")
     rate = cur.fetchall()
     return rate
-
-
-def get_minimal_priority(group):
-    if group == 0:
-        cur.execute("SELECT min(priority) FROM users")
-        rate = cur.fetchall()#TODO IDK HOW
-    else:
-        cur.execute(f"SELECT min(priority) FROM users WHERE group = {group}")
-        rate = cur.fetchall()
-    return rate[0][0]
 
 
 def set_circles(user_id):

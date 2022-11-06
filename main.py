@@ -1,12 +1,13 @@
+import requests.exceptions
 import telebot
 from Database import *
 from telebot import types
 
-bot = telebot.TeleBot('')
+bot = telebot.TeleBot("")
 myId = 457037353
 historyGroupId = -1001642646649
 
-# Start
+
 @bot.message_handler(commands=["start"])
 def start(message):
     try:
@@ -76,7 +77,7 @@ def answer(call):
         # Кто-то не может
         if (9 < len(call.data) < 12):
             who_cant_duty = int(call.data[:-1])
-            set_another_one(who_cant_duty)
+            set_priority_plus_one(who_cant_duty)
             bot.edit_message_text(text="Подберём других...", chat_id=call.message.chat.id,
                                   message_id=call.message.message_id)
             if call.data[-1] == "0":  # Если группы нет
@@ -106,7 +107,8 @@ def answer(call):
 
         if (call.data == "accept"):
             set_priority_to_zero()
-            bot.send_message(historyGroupId, text=f'{get_who_am_i(call.message.chat.id)[0][0]} поставил дежурства для: {names}')
+            bot.send_message(historyGroupId,
+                             text=f'{get_who_am_i(call.message.chat.id)[0][0]} поставил дежурства для: {names}')
             for i in range(amount):
                 set_circles(rez[i][0])
             bot.edit_message_text(chat_id=call.message.chat.id,
@@ -202,10 +204,13 @@ def message_reply(message):
 
     except IndexError as error:
         bot.send_message(message.chat.id,
-                         "Вас нет в списке бота, если произошла ужасная ошибка, Вы можете написать мне @ExStaroth")
+                         "Вас нет в списке бота, если произошла ужасная ошибка, Вы можете написать мне @ExZuperi")
 
 
-bot.polling(none_stop=True, interval=0)
+try:
+    bot.polling(none_stop=True, interval=0)
+except requests.exceptions.ReadTimeout as e:
+    print("Телеграмм лёг отдохнуть, штош")
 
 # TODO Сделать что если приоритет 2 отправлялось сообщение о том что по 2 кругу?
 # TODO Можно: Дата последнего дежурства
