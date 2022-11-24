@@ -206,12 +206,12 @@ def message_reply(message):
         bot.send_message(message.chat.id,
                          "Вас нет в списке бота, если произошла ужасная ошибка, Вы можете написать мне @ExZuperi")
 
-
-try:
-    bot.polling(none_stop=True, interval=0)
-except:
-    print("Произошла ошибка, но я все восстановил")
-    continue
+while True:
+    try:
+        bot.polling(none_stop=True, interval=0)
+    except:
+        print("Произошла ошибка, но я все восстановил")
+        continue
 
 # TODO Сделать что если приоритет 2 отправлялось сообщение о том что по 2 кругу?
 # TODO Можно: Дата последнего дежурства
