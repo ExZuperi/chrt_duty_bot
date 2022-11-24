@@ -209,8 +209,9 @@ def message_reply(message):
 
 try:
     bot.polling(none_stop=True, interval=0)
-except requests.exceptions.ReadTimeout as e:
-    print("Телеграмм лёг отдохнуть, штош")
+except:
+    print("Произошла ошибка, но я все восстановил")
+    continue
 
 # TODO Сделать что если приоритет 2 отправлялось сообщение о том что по 2 кругу?
 # TODO Можно: Дата последнего дежурства
